@@ -9,7 +9,7 @@ from master_controller.detection_runners.local_detection_runner import \
 from master_controller.detection_runners.server_detection_runner import \
     ServerDetectionRunner
 from master_controller.music_player import MusicPlayer
-from settings import NOISE_LENGTH, PICTURES_FOLDER
+from settings import NOISE_LENGTH, PICTURES_FOLDER, BIRDS_FOLDER
 from master_controller.image_preprocessing.movement_detector import \
     MovementDetector
 from os.path import join
@@ -52,7 +52,6 @@ class Controller:
         self._camera.stop()
 
     def start_music_player(self):
-        print('playing music')
         self._music_player.start()
         self._playing_music = True
 
@@ -68,12 +67,13 @@ class Controller:
         self._music_player.stop()
         self._playing_music = False
 
-    def save_picture(self, desc: str):
+    def save_picture(self, desc: str = '', birds=True):
         print('saving picture')
+        saving_folder = BIRDS_FOLDER if birds else PICTURES_FOLDER
         now = datetime.datetime.now()
         time_desc = now.strftime('%m_%d__%H_%M_%S')
-        cv2.imwrite(join(PICTURES_FOLDER, time_desc + desc + '.jpg'), 
-                    self._camera.get_current_frame())
+        cv2.imwrite(join(saving_folder, time_desc + desc + '.jpg'),
+                    self._movement_detector.movement_frame)
 
     def music_timeout(self):
         return time.time() - self._detector_in_use.last_detection_time \
@@ -82,7 +82,7 @@ class Controller:
     def check_music_timeout(self):
         if self._playing_music and self.music_timeout():
             self.stop_music_player()
-            self.save_picture('_movement_stopped')
+            self.save_picture('_movement_stopped', False)
 
     def show_picture(self):
         try:
@@ -97,9 +97,10 @@ class Controller:
         except cv2.error:
             return
 
-    def check_playing_music(self):
+    def check_detection(self):
         if not self.music_timeout():
             if not self._playing_music:
+                self.save_picture()
                 self.start_movement()
                 self.start_music_player()
 
@@ -111,14 +112,6 @@ class Controller:
             self._detector_in_use = self._server_detector
         else:
             self._detector_in_use = self._local_detector
-
-    # def save_detection(self, folder, bird_detected):
-    #     date = str(datetime.datetime.now()).replace(':', '-')
-    #     file_path = join(folder, date + '.jpg')
-    #     cv2.imwrite(file_path, self.movement_frame)
-    #
-    #     file_path_detection = join(folder, date + '_detection.jpg')
-    #     cv2.imwrite(file_path_detection, self.frame)
 
     def update_picture_to_detector(self):
         picture_to_analyze = self._movement_detector.movement_frame
@@ -142,6 +135,6 @@ class Controller:
             if cv2.waitKey(1) == ord('q'):
                 return True
 
-        self.check_playing_music()
+        self.check_detection()
 
         time.sleep(1)
