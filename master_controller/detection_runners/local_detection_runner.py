@@ -1,6 +1,6 @@
 from typing import Callable, List
 
-from detection.yolo_detector import YOLODetector
+from detection.simple_detector import SimpleDetector
 from master_controller.detection_runners.abstract_detection_runner import \
     AbstractDetectionRunner
 from master_controller.detection_runners.detection_caller import \
@@ -10,11 +10,11 @@ from master_controller.detection_runners.detection_caller import \
 class LocalDetectionRunner(AbstractDetectionRunner):
     def __init__(self):
         super().__init__()
-        self.yolo_detector = YOLODetector()
+        self.simple_detector = SimpleDetector()
 
     def process_image(self):
         super().process_image()
-        process_image_function = self.yolo_detector.detect_birds
+        process_image_function = self.simple_detector.detect
         self.start_detection(process_image_function, [self.image])
 
     def init_detection_caller(self, process_function: Callable,

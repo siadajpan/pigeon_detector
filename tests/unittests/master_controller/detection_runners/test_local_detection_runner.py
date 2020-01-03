@@ -3,6 +3,7 @@ from unittest.mock import MagicMock
 
 import numpy as np
 
+from detection.simple_detector import SimpleDetector
 from detection.yolo_detector import YOLODetector
 from master_controller.detection_runners.abstract_detection_runner import \
     AbstractDetectionRunner
@@ -17,7 +18,7 @@ class TestLocalDetecionRunner(TestCase):
 
     def test_init(self):
         self.assertIsInstance(self.local_runner, AbstractDetectionRunner)
-        self.assertIsInstance(self.local_runner.yolo_detector, YOLODetector)
+        self.assertIsInstance(self.local_runner.simple_detector, SimpleDetector)
 
     def test_process_image(self):
         # given
