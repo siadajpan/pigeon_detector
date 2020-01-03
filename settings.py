@@ -34,3 +34,8 @@ class YoloFiles:
     COCO_NAMES = 'coco.names'
     CONFIG = 'yolov3.cfg'
     WEIGHTS = 'yolov3.weights'
+
+
+class SimpleDetection:
+    MAX_SIZE = 200
+    MIN_SIZE = 5
