@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 test_creator.py
 .idea
+yolov3.weights
