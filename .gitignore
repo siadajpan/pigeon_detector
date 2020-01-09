@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+test_creator.py
+.idea
+yolov3.weights
+crows.mp3
