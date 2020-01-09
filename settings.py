@@ -25,7 +25,7 @@ def create_path(path: str):
 
 
 PICTURES_FOLDER = create_path('pictures/non_birds/')
-BIRDS_FOLDER = create_path('pictures/birds/')
+BIRDS_FOLDER = '/home/pi/Pictures'
 MUSIC_PATH = create_path('master_controller/files/crows.mp3')
 YOLO_CONFIG_FOLDER = create_path('detection/yolo_coco/')
 
