@@ -67,9 +67,8 @@ class Controller:
         self._music_player.stop()
         self._playing_music = False
 
-    def save_picture(self, desc: str = '', birds=True):
-        print('saving picture')
-        saving_folder = BIRDS_FOLDER if birds else PICTURES_FOLDER
+    def save_picture(self, desc: str = ''):
+        saving_folder = BIRDS_FOLDER
         now = datetime.datetime.now()
         time_desc = now.strftime('%m_%d__%H_%M_%S')
         image = self.get_image_with_movement()
