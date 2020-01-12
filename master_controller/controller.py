@@ -25,14 +25,14 @@ SERVER_DETECTOR = 'SERVER_DETECTOR'
 class Controller:
     def __init__(self, camera: GenericCamera, detector: MovementDetector,
                  music_player: MusicPlayer):
-        self._camera: GenericCamera = camera
-        self._movement_detector: MovementDetector = detector
-        self._music_player: MusicPlayer = music_player
-        self._playing_music: bool = False
+        self._camera = camera
+        self._movement_detector = detector
+        self._music_player = music_player
+        self._playing_music = False
         self._picture_show = False
         self._local_detector = LocalDetectionRunner()
         self._server_detector = ServerDetectionRunner()
-        self._detector_in_use: AbstractDetectionRunner = self._local_detector
+        self._detector_in_use = self._local_detector
 
     def start_camera(self):
         self._camera.start()
