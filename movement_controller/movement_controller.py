@@ -10,8 +10,8 @@ class MovementController:
     # that changes the moving state back to False
     def __init__(self):
         self.moving = False
-        self.servo_controller: PiServoController = PiServoController()
-        self.movement_caller: Optional[MovementCaller] = None
+        self.servo_controller = PiServoController()
+        self.movement_caller = None
 
     def stopped_movement(self):
         self.moving = False
