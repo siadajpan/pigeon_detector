@@ -11,12 +11,12 @@ class MovementDetector(Thread):
     def __init__(self):
         super().__init__()
         self.birds_detected = False
-        self.curr_frame: Optional[np.array] = None
-        self.base_frame: Optional[np.array] = None
-        self.movement_frame: Optional[np.array] = None
-        self.base_frame_time: float = 0.
-        self.stop_detector: bool = False
-        self.movement_area: Rectangle = Rectangle(0, 0, 0, 0)
+        self.curr_frame = None
+        self.base_frame = None
+        self.movement_frame = None
+        self.base_frame_time = 0.
+        self.stop_detector = False
+        self.movement_area = Rectangle(0, 0, 0, 0)
         self.use_self_detector = True
 
     def stop(self):
