@@ -89,7 +89,7 @@ class Controller:
         if self._movement_detector.movement_area:
             x, y, w, h = self._movement_detector.movement_area.data
             cv2.rectangle(
-                image, (x, y), (x + w, y + h), (200, 200, 104)
+                image, (x, y), (x + w, y + h), (0, 0, 255)
             )
 
         return image
