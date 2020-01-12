@@ -72,8 +72,9 @@ class Controller:
         saving_folder = BIRDS_FOLDER if birds else PICTURES_FOLDER
         now = datetime.datetime.now()
         time_desc = now.strftime('%m_%d__%H_%M_%S')
-        cv2.imwrite(join(saving_folder, time_desc + desc + '.jpg'),
-                    self._movement_detector.movement_frame)
+        image = self.get_image_with_movement()
+
+        cv2.imwrite(join(saving_folder, time_desc + desc + '.jpg'), image)
 
     def music_timeout(self):
         return time.time() - self._detector_in_use.last_detection_time \
@@ -82,17 +83,22 @@ class Controller:
     def check_music_timeout(self):
         if self._playing_music and self.music_timeout():
             self.stop_music_player()
-            self.save_picture('_movement_stopped', False)
+            self.save_picture('_movement_stopped')
+
+    def get_image_with_movement(self):
+        image = self._camera.image
+        if self._movement_detector.movement_area:
+            x, y, w, h = self._movement_detector.movement_area.data
+            cv2.rectangle(
+                image, (x, y), (x + w, y + h), (200, 200, 104)
+            )
+
+        return image
 
     def show_picture(self):
         try:
-            if self._movement_detector.movement_area:
-                x, y, w, h = self._movement_detector.movement_area.data
-                cv2.rectangle(
-                    self._camera.image, (x, y), (x + w, y + h), (200, 200, 104)
-                )
-
-            cv2.imshow('detected', self._camera.image)
+            image = self.get_image_with_movement()
+            cv2.imshow('detected', image)
 
         except cv2.error:
             return
