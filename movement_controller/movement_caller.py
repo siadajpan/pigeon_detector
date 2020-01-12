@@ -15,7 +15,7 @@ class MovementCaller(Thread):
         self.movement_callback = movement_callback
 
     def run(self):
-        for i in range(5):
+        for i in range(10):
             self.servo_controller.move_servo()
             time.sleep(0.5)
 
