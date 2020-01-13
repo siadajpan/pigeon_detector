@@ -6,9 +6,9 @@ class DetectionCaller(Thread):
     def __init__(self, process_image_function: Callable, arguments: List,
                  callback: Callable):
         super().__init__()
-        self.process_image_function: Callable = process_image_function
+        self.process_image_function = process_image_function
         self.arguments = arguments
-        self.callback: Callable = callback
+        self.callback = callback
 
     def run(self) -> None:
         detected = self.process_image_function(*self.arguments)

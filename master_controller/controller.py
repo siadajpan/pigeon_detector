@@ -25,14 +25,14 @@ SERVER_DETECTOR = 'SERVER_DETECTOR'
 class Controller:
     def __init__(self, camera: GenericCamera, detector: MovementDetector,
                  music_player: MusicPlayer):
-        self._camera: GenericCamera = camera
-        self._movement_detector: MovementDetector = detector
-        self._music_player: MusicPlayer = music_player
-        self._playing_music: bool = False
+        self._camera = camera
+        self._movement_detector = detector
+        self._music_player = music_player
+        self._playing_music = False
         self._picture_show = False
         self._local_detector = LocalDetectionRunner()
         self._server_detector = ServerDetectionRunner()
-        self._detector_in_use: AbstractDetectionRunner = self._local_detector
+        self._detector_in_use = self._local_detector
 
     def start_camera(self):
         self._camera.start()
@@ -67,13 +67,13 @@ class Controller:
         self._music_player.stop()
         self._playing_music = False
 
-    def save_picture(self, desc: str = '', birds=True):
-        print('saving picture')
-        saving_folder = BIRDS_FOLDER if birds else PICTURES_FOLDER
+    def save_picture(self, desc: str = ''):
+        saving_folder = BIRDS_FOLDER
         now = datetime.datetime.now()
         time_desc = now.strftime('%m_%d__%H_%M_%S')
-        cv2.imwrite(join(saving_folder, time_desc + desc + '.jpg'),
-                    self._movement_detector.movement_frame)
+        image = self.get_image_with_movement()
+
+        cv2.imwrite(join(saving_folder, time_desc + desc + '.jpg'), image)
 
     def music_timeout(self):
         return time.time() - self._detector_in_use.last_detection_time \
@@ -82,17 +82,22 @@ class Controller:
     def check_music_timeout(self):
         if self._playing_music and self.music_timeout():
             self.stop_music_player()
-            self.save_picture('_movement_stopped', False)
+            self.save_picture('_movement_stopped')
+
+    def get_image_with_movement(self):
+        image = self._camera.image
+        if self._movement_detector.movement_area:
+            x, y, w, h = self._movement_detector.movement_area.data
+            cv2.rectangle(
+                image, (x, y), (x + w, y + h), (0, 0, 255)
+            )
+
+        return image
 
     def show_picture(self):
         try:
-            if self._movement_detector.movement_area:
-                x, y, w, h = self._movement_detector.movement_area.data
-                cv2.rectangle(
-                    self._camera.image, (x, y), (x + w, y + h), (200, 200, 104)
-                )
-
-            cv2.imshow('detected', self._camera.image)
+            image = self.get_image_with_movement()
+            cv2.imshow('detected', image)
 
         except cv2.error:
             return
