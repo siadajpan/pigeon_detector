@@ -13,4 +13,4 @@ if __name__ == '__main__':
     now = datetime.datetime.now()
     time_desc = now.strftime('%m_%d__%H_%M_%S')
 
-    cv2.imwrite(join('/home/karol/Pictures', time_desc + '.jpg'), frame)
+    cv2.imwrite(join('/home/pi/Pictures', time_desc + '.jpg'), frame)
