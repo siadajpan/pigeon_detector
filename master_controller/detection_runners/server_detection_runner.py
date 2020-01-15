@@ -19,8 +19,8 @@ class ServerDetectionRunner(AbstractDetectionRunner):
             settings.Server.IMAGE_PROCESSING
         self.connection_check = server_address + \
             settings.Server.CONNECTION_CHECK
-        self.connected: bool = False
-        self.last_connection_check: float = 0.
+        self.connected = False
+        self.last_connection_check = 0.
 
     def process_image(self):
         super().process_image()

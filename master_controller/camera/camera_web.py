@@ -9,6 +9,8 @@ class CameraWeb(GenericCamera):
     def __init__(self, show_frame: bool = True):
         super().__init__(show_frame)
         self._cap = cv2.VideoCapture(0)
+        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
         time.sleep(1)
         self.frame_size = self.init_cap()
 

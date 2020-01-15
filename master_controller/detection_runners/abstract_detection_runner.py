@@ -10,10 +10,10 @@ from master_controller.detection_runners.detection_caller import \
 class AbstractDetectionRunner:
     @abstractmethod
     def __init__(self):
-        self.image: Optional[np.array] = None
+        self.image = None
         self.processing = False
-        self.last_detection_time: float = 0.
-        self.detection_caller: Optional[DetectionCaller] = None
+        self.last_detection_time = 0.
+        self.detection_caller = None
 
     def update_image(self, image: np.array):
         self.image = image
