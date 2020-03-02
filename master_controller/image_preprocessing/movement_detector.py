@@ -12,14 +12,15 @@ from master_controller.image_preprocessing.rectangle import Rectangle
 class MovementDetector(Thread):
     def __init__(self):
         super().__init__()
-        self.curr_frame = None
-        self.base_frame = None
-        self.base_frame_time = 0.
-        self.stop_detector = False
-        self.movement_area: Optional[List[Rectangle]] = None
+        self.curr_frame: Optional[np.array] = None
+        self._base_frame: Optional[np.array] = None
+        self._base_frame_time: float = 0.
+        self._stop_detector: bool = False
+        self.movement_boxes: Optional[List[Rectangle]] = None
+        self.contours: Optional[np.array] = None
 
     def stop(self):
-        self.stop_detector = True
+        self._stop_detector = True
 
     def add_frame(self, frame):
         self.curr_frame = frame
@@ -32,9 +33,9 @@ class MovementDetector(Thread):
         return gray
 
     def update_base_frame(self, frame):
-        self.base_frame = frame.copy()
-        self.base_frame = self.pre_process_image(self.base_frame)
-        self.base_frame_time = time.time()
+        self._base_frame = frame.copy()
+        self._base_frame = self.pre_process_image(self._base_frame)
+        self._base_frame_time = time.time()
 
     @staticmethod
     def cut_frame(frame: np.array, rectangle: Rectangle):
@@ -54,12 +55,11 @@ class MovementDetector(Thread):
 
         return None
 
-    @staticmethod
-    def find_contour(bin_frame: np.array):
+    def find_contour(self, bin_frame: np.array):
         # finds rectangle contour around all non-zero elements in binary array
         contours, _ = cv2.findContours(bin_frame, cv2.RETR_TREE,
                                        cv2.CHAIN_APPROX_SIMPLE)
-
+        self.contours = contours
         rectangles = [Rectangle(*cv2.boundingRect(contour))
                       for contour in contours]
 
@@ -79,19 +79,22 @@ class MovementDetector(Thread):
 
     def select_movement_contours(self):
         gray = self.pre_process_image(self.curr_frame)
-        difference_binary = self.find_array_difference(self.base_frame, gray)
-        self.movement_area = self.find_contour(difference_binary)
+        difference_binary = self.find_array_difference(self._base_frame, gray)
+        self.movement_boxes = self.find_contour(difference_binary)
 
     def check_if_update_base_frame(self):
-        return time.time() - self.base_frame_time > settings.NEW_BASE_TIME
+        return time.time() - self._base_frame_time > settings.NEW_BASE_TIME
+
+    def update_base_and_select_movement(self):
+        if self.check_if_update_base_frame():
+            self.update_base_frame(self.curr_frame)
+
+        self.select_movement_contours()
 
     def run(self):
-        while not self.stop_detector:
+        while not self._stop_detector:
             if self.curr_frame is None:
                 time.sleep(0.1)
                 continue
 
-            if self.check_if_update_base_frame():
-                self.update_base_frame(self.curr_frame)
-
-            self.select_movement_contours()
+            self.update_base_and_select_movement()

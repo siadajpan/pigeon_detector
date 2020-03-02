@@ -16,18 +16,18 @@ class TestMovementDetector(TestCase):
         # pass
         self.detector = MovementDetector()
 
-    def tearDown(self) -> None:
-        self.detector.stop()
+    def test_init(self):
+        self.assertIsNone(self.detector.curr_frame)
 
     def test_stop(self):
         # given
-        self.assertFalse(self.detector.stop_detector)
+        self.assertFalse(self.detector._stop_detector)
 
         # when
         self.detector.stop()
 
         # then
-        self.assertTrue(self.detector.stop_detector)
+        self.assertTrue(self.detector._stop_detector)
 
     def test_add_frame(self):
         # given
@@ -62,8 +62,8 @@ class TestMovementDetector(TestCase):
         self.detector.update_base_frame(frame1)
 
         # then
-        self.assertTrue(np.array_equal(self.detector.base_frame, frame2))
-        self.assertAlmostEqual(self.detector.base_frame_time, time_now,
+        self.assertTrue(np.array_equal(self.detector._base_frame, frame2))
+        self.assertAlmostEqual(self.detector._base_frame_time, time_now,
                                places=1)
 
     def test_cut_frame(self):
@@ -112,6 +112,7 @@ class TestMovementDetector(TestCase):
         find_contours_mock.assert_called()
         box_mock.assert_called()
         self.assertEqual([Rectangle(1, 2, 3, 4)], rectangles)
+        self.assertEqual(['cnts'], self.detector.contours)
 
     @patch('cv2.absdiff')
     @patch('cv2.threshold')
@@ -152,7 +153,7 @@ class TestMovementDetector(TestCase):
 
     def test_check_if_update_base_frame_yes(self):
         # given
-        self.detector.base_frame_time = time.time() - settings.NEW_BASE_TIME - 1
+        self.detector._base_frame_time = time.time() - settings.NEW_BASE_TIME - 1
 
         # when
         update = self.detector.check_if_update_base_frame()
@@ -162,10 +163,72 @@ class TestMovementDetector(TestCase):
 
     def test_check_if_update_base_frame_no(self):
         # given
-        self.detector.base_frame_time = time.time() - settings.NEW_BASE_TIME + 1
+        self.detector._base_frame_time = time.time() - settings.NEW_BASE_TIME + 1
 
         # when
         update = self.detector.check_if_update_base_frame()
 
         # then
         self.assertFalse(update)
+
+    def test_update_base_and_select_movement_no_base(self):
+        # given
+        self.detector.check_if_update_base_frame = MagicMock(return_value=False)
+        self.detector.update_base_frame = MagicMock()
+        self.detector.select_movement_contours = MagicMock()
+
+        # when
+        self.detector.update_base_and_select_movement()
+
+        # then
+        self.detector.check_if_update_base_frame.assert_called()
+        self.detector.update_base_frame.assert_not_called()
+        self.detector.select_movement_contours.assert_called()
+
+    def test_update_base_and_select_movement(self):
+        # given
+        self.detector.check_if_update_base_frame = MagicMock(return_value=True)
+        self.detector.update_base_frame = MagicMock()
+        self.detector.select_movement_contours = MagicMock()
+
+        # when
+        self.detector.update_base_and_select_movement()
+
+        # then
+        self.detector.check_if_update_base_frame.assert_called()
+        self.detector.update_base_frame.assert_called()
+        self.detector.select_movement_contours.assert_called()
+
+    @patch('time.sleep')
+    def test_run(self, sleep_mock):
+        # given
+        def stop_det(*args):
+            self.detector._stop_detector = True
+
+        sleep_mock.side_effect = stop_det
+        self.detector.curr_frame = None
+        self.detector.update_base_and_select_movement = MagicMock()
+
+        # when
+        self.detector.run()
+
+        # then
+        sleep_mock.assert_called()
+        self.detector.update_base_and_select_movement.assert_not_called()
+
+    @patch('time.sleep')
+    def test_run_frame(self, sleep_mock):
+        # given
+        def stop_det(*args):
+            self.detector._stop_detector = True
+
+        self.detector.curr_frame = MagicMock()
+        self.detector.update_base_and_select_movement = MagicMock(
+            side_effect=stop_det)
+
+        # when
+        self.detector.run()
+
+        # then
+        sleep_mock.assert_not_called()
+        self.detector.update_base_and_select_movement.assert_called()
