@@ -32,52 +32,23 @@ class TestCameraWeb(TestCase):
 
     def test_run_with_showing_image(self):
         # given
-        self.camera_web.showing_image = True
-        self.camera_web.show_frame = MagicMock()
-        self.cap.read.side_effect = self._stop_loop
-        
+        self.camera_web.check_stop = MagicMock(side_effect=[False, True])
+        self.cap.read.return_value = ('ret', 'frame')
+
         # when
         self.camera_web.run()
         
         # then
         self.cap.read.assert_called()
-        self.camera_web.show_frame.assert_called()
-
-    def test_run_without_showing_image(self):
-        # given
-        self.camera_web.showing_image = False
-        self.camera_web.show_frame = MagicMock()
-        self.cap.read.side_effect = self._stop_loop
-
-        # when
-        self.camera_web.run()
-
-        # then
-        self.cap.read.assert_called()
-        self.camera_web.show_frame.assert_not_called()
-
-    def test_quit_showing_image(self):
-        # given
-        self.camera_web.showing_image = True
-        self.camera_web.end_showing = MagicMock()
-
-        # when
-        self.camera_web.quit()
-
-        # then
-        self.camera_web.end_showing.assert_called()
-        self.cap.release.assert_called()
+        self.assertEqual('frame', self.camera_web.image)
 
     def test_quit_not_showing_image(self):
         # given
-        self.camera_web.showing_image = False
-        self.camera_web.end_showing = MagicMock()
 
         # when
         self.camera_web.quit()
 
         # then
-        self.camera_web.end_showing.assert_not_called()
         self.cap.release.assert_called()
 
 

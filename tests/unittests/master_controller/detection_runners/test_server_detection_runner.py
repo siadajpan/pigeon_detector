@@ -1,12 +1,12 @@
 import time
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
-import cv2
-import numpy as np
 import requests
 
 import settings
+from master_controller.detection_runners.abstract_detection_runner import \
+    AbstractDetectionRunner
 from master_controller.detection_runners.server_detection_caller import \
     ServerDetectionCaller
 from master_controller.detection_runners.server_detection_runner import \
@@ -26,51 +26,63 @@ class TestServerDetectionRunner(TestCase):
         self.assertFalse(self.runner.connected)
         self.assertEqual(0., self.runner.last_connection_check)
 
-    def test_process_image(self):
+    @patch.object(AbstractDetectionRunner, 'update_detection_result')
+    def test_update_detection_result_not_connected(self, update_mock):
         # given
-        self.runner.image = (np.array((100, 120, 3))).astype(np.uint8)
-        process_image_function = requests.post
-        _, image_encoded = cv2.imencode('.jpg', self.runner.image)
-        arguments = [self.runner.send_pic_address, image_encoded.tostring()]
-
-        self.runner.start_detection = MagicMock()
-
-        # when
-        self.runner.process_image()
-
-        # then
-        self.runner.start_detection.assert_called_with(process_image_function,
-                                                       arguments)
-
-    def test_update_detecion_result(self):
-        # given
-        detected = (True, True)
+        detected = (False, [MagicMock()])
 
         # when
         self.runner.update_detection_result(detected)
 
         # then
-        self.assertTrue(self.runner.connected)
-        self.assertFalse(self.runner.processing)
-        self.assertAlmostEqual(time.time(), self.runner.last_detection_time,
-                               places=3)
+        self.assertFalse(self.runner.connected)
+        update_mock.assert_not_called()
+
+    @patch.object(AbstractDetectionRunner, 'update_detection_result')
+    def test_update_detection_result(self, update_mock):
+        # given
+        detected = (True, [MagicMock()])
+
+        # when
+        self.runner.update_detection_result(detected)
+
+        # then
+        update_mock.assert_called()
 
     def test_init_detection_caller(self):
         # given
 
         # when
-        self.runner.init_detection_caller(sum, [1, 2])
+        result = self.runner._init_detection_caller([1, 2])
 
         # then
-        self.assertIsInstance(self.runner.detection_caller,
-                              ServerDetectionCaller)
+        self.assertIsInstance(result, ServerDetectionCaller)
+
+    @patch('cv2.imencode')
+    @patch.object(AbstractDetectionRunner, 'send_image')
+    def test_send_image(self, send_mock, encode_mock):
+        # given
+        caller = MagicMock()
+        self.runner._init_detection_caller = MagicMock(return_value=caller)
+        image = MagicMock()
+        encode_mock.return_value = ('', image)
+
+        # when
+        self.runner.send_image()
+
+        # then
+        send_mock.acssert_called()
+        encode_mock.assert_called()
+        image.tostring.assert_called()
+        self.runner._init_detection_caller.assert_called()
+        caller.start.assert_called()
 
     def test_last_connection_check_too_recent(self):
         # given
         self.runner.last_connection_check = time.time()
 
         # when
-        too_recent = self.runner.last_connection_check_too_recent()
+        too_recent = self.runner._last_connection_check_too_recent()
 
         # then
         self.assertTrue(too_recent)
@@ -80,7 +92,7 @@ class TestServerDetectionRunner(TestCase):
         self.runner.last_connection_check = time.time() - 1000
 
         # when
-        too_recent = self.runner.last_connection_check_too_recent()
+        too_recent = self.runner._last_connection_check_too_recent()
 
         # then
         self.assertFalse(too_recent)
@@ -106,31 +118,37 @@ class TestServerDetectionRunner(TestCase):
         # then
         self.assertFalse(connected)
 
-    def test_check_connection_connected(self):
+    @patch('requests.get')
+    def test_check_connection_connected(self, get_mock):
         # given
-        self.runner.connection_check = 'http://google.com'
 
         # when
         connected = self.runner.check_connection()
 
         # then
+        get_mock.assert_called()
         self.assertTrue(connected)
 
-    def test_check_connection_not_connected(self):
+    @patch('requests.get')
+    def test_check_connection_not_connected(self, get_mock):
         # given
-        self.runner.connection_check = 'http://non_existing_address'
+        get_mock.side_effect = requests.exceptions.ConnectionError
 
         # when
         connected = self.runner.check_connection()
 
         # then
+        self.assertFalse(self.runner.connected)
         self.assertFalse(connected)
 
+    @patch('requests.get')
+    def test_check_connection_timeout(self, get_mock):
+        # given
+        get_mock.side_effect = requests.exceptions.Timeout
 
+        # when
+        connected = self.runner.check_connection()
 
-
-
-
-
-
-
+        # then
+        self.assertFalse(self.runner.connected)
+        self.assertFalse(connected)

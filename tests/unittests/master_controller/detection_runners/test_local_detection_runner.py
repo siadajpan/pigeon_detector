@@ -1,10 +1,9 @@
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import numpy as np
 
 from detection.simple_detector import SimpleDetector
-from detection.yolo_detector import YOLODetector
 from master_controller.detection_runners.abstract_detection_runner import \
     AbstractDetectionRunner
 from master_controller.detection_runners.detection_caller import DetectionCaller
@@ -20,25 +19,25 @@ class TestLocalDetecionRunner(TestCase):
         self.assertIsInstance(self.local_runner, AbstractDetectionRunner)
         self.assertIsInstance(self.local_runner.simple_detector, SimpleDetector)
 
-    def test_process_image(self):
-        # given
-        self.local_runner.image = (np.array((100, 120, 3))).astype(np.uint8)
-        self.local_runner.processing = False
-        self.local_runner.start_detection = MagicMock()
-
-        # when
-        self.local_runner.process_image()
-
-        # then
-        self.local_runner.start_detection.assert_called()
-
     def test_init_detection_caller(self):
         # given
 
         # when
-        self.local_runner.init_detection_caller(sum, [1, 2])
+        result = self.local_runner._init_detection_caller([1, 2])
 
         # then
-        self.assertIsInstance(self.local_runner.detection_caller,
-                              DetectionCaller)
+        self.assertIsInstance(result, DetectionCaller)
 
+    @patch.object(AbstractDetectionRunner, 'send_image')
+    def test_send_image(self, send_mock):
+        # given
+        caller = MagicMock()
+        self.local_runner._init_detection_caller = MagicMock(
+            return_value=caller)
+
+        # when
+        self.local_runner.send_image()
+
+        # then
+        send_mock.assert_called()
+        caller.start.assert_called()

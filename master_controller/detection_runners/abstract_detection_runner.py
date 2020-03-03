@@ -1,41 +1,39 @@
 import time
 from abc import abstractmethod
-from typing import Optional, Callable, List
+from typing import Optional, List, Callable
 
 import numpy as np
-from master_controller.detection_runners.detection_caller import \
-    DetectionCaller
+
+from master_controller.image_preprocessing.rectangle import Rectangle
 
 
 class AbstractDetectionRunner:
-    @abstractmethod
     def __init__(self):
-        self.image = None
-        self.processing = False
-        self.last_detection_time = 0.
-        self.detection_caller = None
+        self.image: Optional[np.array] = None
+        self.processing: bool = False
+        self.last_detections: Optional[List[Rectangle]] = None
+        self.movement_boxes: Optional[List[Rectangle]] = None
+        self.last_detection_time = 0
 
     def update_image(self, image: np.array):
         self.image = image
 
-    def update_detection_result(self, detected: bool):
-        self.processing = False
-        if detected:
-            self.last_detection_time = time.time()
+    def update_movement_boxes(self, movements: List[Rectangle]):
+        self.movement_boxes = movements
 
-    def process_image(self):
+    def update_detection_result(self, detected_boxes: List[Rectangle]):
+        if detected_boxes:
+            self.last_detection_time = time.time()
+            self.last_detections = detected_boxes
+
+        self.processing = False
+
+    def send_image(self):
         if self.image is None:
             raise ValueError('There is no image to process')
+        if self.movement_boxes is None:
+            raise ValueError('There are no rectangles selected on picture')
         if self.processing:
             raise RuntimeError('Detector busy, cannot process another image')
 
-    @abstractmethod
-    def init_detection_caller(self, process_function: Callable,
-                              arguments: List):
-        pass
-
-    def start_detection(self, process_function: Callable, arguments: List):
         self.processing = True
-
-        self.init_detection_caller(process_function, arguments)
-        self.detection_caller.start()

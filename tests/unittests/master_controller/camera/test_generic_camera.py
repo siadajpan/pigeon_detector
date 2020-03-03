@@ -1,7 +1,5 @@
 from unittest import TestCase
-from unittest.mock import MagicMock
 
-import cv2
 import numpy as np
 
 from master_controller.camera.generic_camera import GenericCamera
@@ -18,12 +16,7 @@ class TestGenericCamera(TestCase):
 
         # then
         self.assertIsNone(self.camera.image)
-        self.assertTrue(self.camera.showing_image)
         self.assertFalse(self.camera._stop_camera)
-        self.assertTrue(self.camera._running)
-
-    def test_running(self):
-        self.assertEqual(self.camera.running, self.camera._running)
 
     def test_stop(self):
         # given
@@ -33,7 +26,6 @@ class TestGenericCamera(TestCase):
 
         # then
         self.assertTrue(self.camera._stop_camera)
-        self.assertFalse(self.camera.running)
 
     def test_check_stop(self):
         self.assertEqual(self.camera.check_stop(), self.camera._stop_camera)
@@ -48,15 +40,3 @@ class TestGenericCamera(TestCase):
 
         # then
         self.assertTrue(np.array_equal(im, im_got))
-
-    def test_end_showing(self):
-        # given
-        # cv2 = MagicMock()
-        cv2.destroyAllWindows = MagicMock()
-
-        # when
-        self.camera.end_showing()
-
-        # then
-        # print(cv2.destroyAllWindows)
-        cv2.destroyAllWindows.assert_called()

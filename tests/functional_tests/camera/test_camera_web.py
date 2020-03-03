@@ -47,11 +47,9 @@ class TestCameraWeb(TestCase):
         # given
         self.camera._cap = MagicMock()
         self.camera._cap.release = MagicMock()
-        self.camera.end_showing = MagicMock()
 
         # when
         self.camera.quit()
 
         # then
         self.camera._cap.release.assert_called()
-        self.camera.end_showing.assert_called()

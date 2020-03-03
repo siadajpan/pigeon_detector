@@ -36,6 +36,10 @@ class YoloFiles:
     WEIGHTS = 'yolov3.weights'
 
 
+class PreProcessing:
+    MIN_PIXEL_DIFFERENCE = 15
+
+
 class SimpleDetection:
     MAX_SIZE = 200
     MIN_SIZE = 5

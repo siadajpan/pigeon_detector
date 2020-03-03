@@ -9,6 +9,7 @@ from master_controller.detection_runners.abstract_detection_runner import \
     AbstractDetectionRunner
 from master_controller.detection_runners.server_detection_caller import \
     ServerDetectionCaller
+from master_controller.image_preprocessing.rectangle import Rectangle
 
 
 class ServerDetectionRunner(AbstractDetectionRunner):
@@ -22,42 +23,46 @@ class ServerDetectionRunner(AbstractDetectionRunner):
         self.connected = False
         self.last_connection_check = 0.
 
-    def process_image(self):
-        super().process_image()
-        process_image_function = requests.post
-        _, image_encoded = cv2.imencode('.jpg', self.image)
-        arguments = [self.send_pic_address, image_encoded.tostring()]
+    def update_detection_result(self, result: Tuple[bool, List[Rectangle]]):
+        connected, boxes = result
+        if not connected:
+            self.connected = False
+            return
 
-        self.start_detection(process_image_function, arguments)
+        super().update_detection_result(boxes)
 
-    def update_detection_result(self, detected: Tuple[bool, bool]):
-        connected, detection = detected
-        self.connected = connected
-
-        super().update_detection_result(detection)
-
-    def init_detection_caller(self, process_function: Callable,
-                              arguments: List):
-
-        self.detection_caller = ServerDetectionCaller(
-            process_image_function=process_function,
+    def _init_detection_caller(self, arguments: List):
+        detection_caller = ServerDetectionCaller(
+            process_image_function=requests.post,
             arguments=arguments,
             callback=self.update_detection_result
         )
+        return detection_caller
 
-    def last_connection_check_too_recent(self):
-        return time.time() - self.last_connection_check < 4
+    def send_image(self):
+        super().send_image()
+        _, image_encoded = cv2.imencode('.jpg', self.image)
+        arguments = [self.send_pic_address, image_encoded.tostring()]
+
+        caller = self._init_detection_caller(arguments)
+        caller.start()
+
+    def _last_connection_check_too_recent(self):
+        return time.time() - self.last_connection_check < 60
 
     def check_connection(self):
         if self.connected:
             return True
 
-        if self.last_connection_check_too_recent():
+        if self._last_connection_check_too_recent():
             return self.connected  # False
         try:
-            requests.get(self.connection_check)
+            self.last_connection_check = time.time()
+            requests.get(self.connection_check, timeout=1)
             self.connected = True
         except requests.exceptions.ConnectionError:
+            self.connected = False
+        except requests.exceptions.Timeout:
             self.connected = False
 
         return self.connected
