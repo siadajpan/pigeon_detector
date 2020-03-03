@@ -14,7 +14,7 @@ if __name__ == '__main__':
     camera = CameraWeb()
     detector = MovementDetector()
 
-    controller = Controller(camera, detector, crow_player, picture_show=True)
+    controller = Controller(camera, detector, crow_player, picture_show=False)
     controller.start_camera()
     controller.start_detector()
 
