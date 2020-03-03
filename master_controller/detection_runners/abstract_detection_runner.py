@@ -13,6 +13,7 @@ class AbstractDetectionRunner:
         self.processing: bool = False
         self.last_detections: Optional[List[Rectangle]] = None
         self.movement_boxes: Optional[List[Rectangle]] = None
+        self.last_detection_time = 0
 
     def update_image(self, image: np.array):
         self.image = image
@@ -21,7 +22,10 @@ class AbstractDetectionRunner:
         self.movement_boxes = movements
 
     def update_detection_result(self, detected_boxes: List[Rectangle]):
-        self.last_detections = detected_boxes
+        if detected_boxes:
+            self.last_detection_time = time.time()
+            self.last_detections = detected_boxes
+
         self.processing = False
 
     def send_image(self):

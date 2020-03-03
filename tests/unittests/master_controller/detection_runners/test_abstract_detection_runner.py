@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from master_controller.detection_runners.abstract_detection_runner import \
     AbstractDetectionRunner
@@ -12,6 +12,7 @@ class TestAbstractDetectionRunner(TestCase):
     def test_init(self):
         self.assertIsNone(self.detection_runner.image)
         self.assertFalse(self.detection_runner.processing)
+        self.assertEqual(0, self.detection_runner.last_detection_time)
 
     def test_update_image(self):
         # given
@@ -33,9 +34,11 @@ class TestAbstractDetectionRunner(TestCase):
         # then
         self.assertEqual(boxes, self.detection_runner.movement_boxes)
 
-    def test_update_detection_True(self):
+    @patch('time.time')
+    def test_update_detection_result_True(self, time_mock):
         # given
         detection = MagicMock()
+        time_mock.return_value = 'time'
 
         # when
         self.detection_runner.update_detection_result(detection)
@@ -43,6 +46,21 @@ class TestAbstractDetectionRunner(TestCase):
         # then
         self.assertFalse(self.detection_runner.processing)
         self.assertEqual(detection, self.detection_runner.last_detections)
+        self.assertEqual('time', self.detection_runner.last_detection_time)
+
+    @patch('time.time')
+    def test_update_detection_result_false(self, time_mock):
+        # given
+        detection = []
+        time_mock.return_value = 'time'
+
+        # when
+        self.detection_runner.update_detection_result(detection)
+
+        # then
+        time_mock.assert_not_called()
+        self.assertFalse(self.detection_runner.processing)
+        self.assertEqual(0, self.detection_runner.last_detection_time)
 
     def test_send_image_image_none(self):
         # given
