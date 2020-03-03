@@ -36,7 +36,7 @@ class TestServerDetectionRunner(TestCase):
         self.runner.start_detection = MagicMock()
 
         # when
-        self.runner.process_image()
+        self.runner.send_image()
 
         # then
         self.runner.start_detection.assert_called_with(process_image_function,
