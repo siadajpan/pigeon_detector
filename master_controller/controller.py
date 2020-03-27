@@ -1,3 +1,6 @@
+import random
+
+import numpy as np
 import requests
 
 import settings
@@ -8,26 +11,29 @@ from master_controller.detection_runners.local_detection_runner import \
     LocalDetectionRunner
 from master_controller.detection_runners.server_detection_runner import \
     ServerDetectionRunner
+from master_controller.image_preprocessing.movement_background_subtract import \
+    MovementDetectorBackgroundSubtract
 from master_controller.music_player import MusicPlayer
+from master_controller.video_recorder import VideoRecorder
 from settings import NOISE_LENGTH, PICTURES_FOLDER, BIRDS_FOLDER
-from master_controller.image_preprocessing.movement_detector import \
-    MovementDetector
 from os.path import join
 import time
 import datetime
 import cv2
-
 
 LOCAL_DETECTOR = 'LOCAL_DETECTOR'
 SERVER_DETECTOR = 'SERVER_DETECTOR'
 
 
 class Controller:
-    def __init__(self, camera: GenericCamera, detector: MovementDetector,
-                 music_player: MusicPlayer, picture_show: bool = False):
+    def __init__(self, camera: GenericCamera,
+                 detector: MovementDetectorBackgroundSubtract,
+                 music_player: MusicPlayer, video_recorder: VideoRecorder,
+                 picture_show: bool = False):
         self._camera = camera
         self._movement_detector = detector
         self._music_player = music_player
+        self._video_recorder = video_recorder
         self._playing_music = False
         self._picture_show = picture_show
         self._local_detector = LocalDetectionRunner()
@@ -38,9 +44,6 @@ class Controller:
     def start_camera(self):
         self._camera.start()
 
-    def start_detector(self):
-        self._movement_detector.start()
-
     def start_music_player(self):
         self._music_player.start()
         self._playing_music = True
@@ -49,10 +52,16 @@ class Controller:
         self._music_player.stop()
         self._playing_music = False
 
+    def start_recording(self, frame, fps):
+        self._video_recorder.init_recording(frame, fps)
+
+    def stop_recording(self):
+        self._video_recorder.stop_recording()
+
     def stop(self):
         self._camera.stop()
-        self._movement_detector.stop()
         self.stop_music_player()
+        self.stop_recording()
 
     @staticmethod
     def start_movement():
@@ -95,6 +104,7 @@ class Controller:
     def check_music_timeout(self):
         if self.music_timeout():
             self.stop_music_player()
+            self.stop_recording()
 
     def get_image_with_movement(self):
         image = self._camera.get_current_frame().copy()
@@ -116,7 +126,10 @@ class Controller:
             raise KeyboardInterrupt
 
     def check_detection(self):
+        image = self._camera.get_current_frame()
+
         if self._playing_music:
+            self._video_recorder.update_frame(image)
             self.check_music_timeout()
             return
 
@@ -125,6 +138,7 @@ class Controller:
             self.save_picture()
             self.start_movement()
             self.start_music_player()
+            self.start_recording(image, 30)
 
     def choose_detector(self):
         if self._server_detector.check_connection():
@@ -137,27 +151,21 @@ class Controller:
         self._detector_in_use.update_movement_boxes(movements)
         self._detector_in_use.send_image()
 
-    def update_picture_to_detector_if_not_processing(self):
+    def update_picture_to_detector_if_not_processing(self, image: np.array):
         if self._detector_in_use.processing:
             return
 
-        picture_to_analyze = self._movement_detector.curr_frame
-        movements = self._movement_detector.movement_boxes
-        
-        if picture_to_analyze is None or movements is None:
+        movements = self._movement_detector.analyze_image(image)
+        if movements is None:
             return
 
-        self.send_update_to_detector(picture_to_analyze, movements)
+        self.send_update_to_detector(image, movements)
 
     def process_detection(self):
-        self._movement_detector.add_frame(self._camera.image)
         self.choose_detector()
-
-        self.update_picture_to_detector_if_not_processing()
+        self.update_picture_to_detector_if_not_processing(self._camera.image)
 
         if self._picture_show:
             self.show_picture()
 
         self.check_detection()
-
-        time.sleep(1)

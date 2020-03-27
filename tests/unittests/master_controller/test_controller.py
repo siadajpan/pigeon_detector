@@ -16,9 +16,10 @@ class TestController(TestCase):
         self.camera = MagicMock()
         self.detector = MagicMock()
         self.music_player = MagicMock()
+        self.video_recorder = MagicMock()
 
         self.controller = Controller(self.camera, self.detector,
-                                     self.music_player)
+                                     self.music_player, self.video_recorder)
 
     def test___init__(self):
         self.assertEqual(self.camera, self.controller._camera)
@@ -41,15 +42,6 @@ class TestController(TestCase):
         # then
         self.controller._camera.start.assert_called()
 
-    def test_start_detector(self):
-        # given
-
-        # when
-        self.controller.start_detector()
-
-        # then
-        self.controller._movement_detector.start.assert_called()
-
     def test_start_music_player(self):
         # given
 
@@ -70,17 +62,36 @@ class TestController(TestCase):
         self.controller._music_player.stop.assert_called()
         self.assertFalse(self.controller._playing_music)
 
+    def test_start_recording(self):
+        # given
+
+        # when
+        self.controller.start_recording(MagicMock(), 10)
+
+        # then
+        self.controller._video_recorder.init_recording.assert_called()
+
+    def test_stop_recording(self):
+        # given
+
+        # when
+        self.controller.stop_recording()
+
+        # then
+        self.controller._video_recorder.stop_recording.assert_called()
+
     def test_stop(self):
         # given
         self.controller.stop_music_player = MagicMock()
+        self.controller.stop_recording = MagicMock()
 
         # when
         self.controller.stop()
 
         # then
         self.controller._camera.stop.assert_called()
-        self.controller._movement_detector.stop.assert_called()
         self.controller.stop_music_player.assert_called()
+        self.controller.stop_recording.assert_called()
 
     @patch('requests.post')
     def test_start_movement(self, post_mock):
@@ -369,71 +380,49 @@ class TestController(TestCase):
         detector.update_movement_boxes.assert_called()
         detector.send_image.assert_called()
 
-    def test_update_picture_to_detector_processing(self):
+    def test_update_picture_to_detector_should_return_if_detector_processing(self):
         # given
         detector = MagicMock()
         detector.processing = True
         self.controller._detector_in_use = detector
-        self.controller.send_update_to_detector = MagicMock()
 
         # when
-        self.controller.update_picture_to_detector_if_not_processing()
+        self.controller.update_picture_to_detector_if_not_processing(MagicMock())
 
         # then
-        self.controller.send_update_to_detector.assert_not_called()
+        self.controller._movement_detector.analyze_image.assert_not_called()
 
-    def test_update_picture_to_detector1(self):
+    def test_update_picture_to_detector_should_return_if_movements_are_None(self):
         # given
-        self.controller._movement_detector.curr_frame = 'curr_frame'
-        self.controller._movement_detector.movement_boxes = None
+        detector = MagicMock()
+        detector.processing = False
+        self.controller._detector_in_use = detector
+        self.controller._movement_detector.analyze_image = MagicMock(return_value=None)
         self.controller.send_update_to_detector = MagicMock()
 
         # when
-        self.controller.update_picture_to_detector_if_not_processing()
+        self.controller.update_picture_to_detector_if_not_processing(MagicMock())
 
         # then
+        self.controller._movement_detector.analyze_image.assert_called()
         self.controller.send_update_to_detector.assert_not_called()
 
-    def test_update_picture_to_detector2(self):
+    def test_update_picture_to_detector_should_send_update_to_detector(self):
         # given
-        self.controller._movement_detector.curr_frame = None
-        self.controller._movement_detector.movement_boxes = None
+        detector = MagicMock()
+        detector.processing = False
+        self.controller._detector_in_use = detector
+        self.controller._movement_detector.analyze_image = MagicMock(return_value=['boxes'])
         self.controller.send_update_to_detector = MagicMock()
 
         # when
-        self.controller.update_picture_to_detector_if_not_processing()
-
-        # then
-        self.controller.send_update_to_detector.assert_not_called()
-
-    def test_update_picture_to_detector3(self):
-        # given
-        self.controller._movement_detector.curr_frame = None
-        self.controller._movement_detector.movement_boxes = 'mov'
-        self.controller.send_update_to_detector = MagicMock()
-
-        # when
-        self.controller.update_picture_to_detector_if_not_processing()
-
-        # then
-        self.controller.send_update_to_detector.assert_not_called()
-
-    def test_update_picture_to_detector4(self):
-        # given
-        self.controller._movement_detector.curr_frame = 'frame'
-        self.controller._movement_detector.movement_boxes = 'mov'
-        self.controller.send_update_to_detector = MagicMock()
-
-        # when
-        self.controller.update_picture_to_detector_if_not_processing()
+        self.controller.update_picture_to_detector_if_not_processing(MagicMock())
 
         # then
         self.controller.send_update_to_detector.assert_called()
 
-    @patch('time.sleep')
-    def test_process_detection(self, sleep_mock):
+    def test_process_detection(self):
         # given
-        self.controller._movement_detector.add_frame = MagicMock()
         self.controller.choose_detector = MagicMock()
         self.controller.update_picture_to_detector_if_not_processing = \
             MagicMock()
@@ -444,18 +433,13 @@ class TestController(TestCase):
         self.controller.process_detection()
 
         # then
-        self.controller._movement_detector.add_frame.assert_called()
         self.controller.choose_detector.assert_called()
         self.controller.update_picture_to_detector_if_not_processing.\
             assert_called()
         self.controller.check_detection.assert_called()
-        sleep_mock.assert_called()
 
-    @patch('time.sleep')
-    @patch('cv2.waitKey')
-    def test_process_detection_show_picture(self, wait_key_mock, sleep_mock):
+    def test_process_detection_show_picture(self):
         # given
-        self.controller._movement_detector.add_frame = MagicMock()
         self.controller.choose_detector = MagicMock()
         self.controller.update_picture_to_detector_if_not_processing = \
             MagicMock()
@@ -467,9 +451,7 @@ class TestController(TestCase):
         self.controller.process_detection()
 
         # then
-        self.controller._movement_detector.add_frame.assert_called()
         self.controller.choose_detector.assert_called()
         self.controller.update_picture_to_detector_if_not_processing.\
             assert_called()
         self.controller.check_detection.assert_called()
-        sleep_mock.assert_called()

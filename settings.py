@@ -1,6 +1,5 @@
 import os
 
-
 CAMERA_RESOLUTION = (1024, 768)
 CAMERA_FRAMERATE = 32
 NOISE_LENGTH = 10
@@ -37,9 +36,13 @@ class YoloFiles:
 
 
 class PreProcessing:
-    MIN_PIXEL_DIFFERENCE = 15
+    HISTORY = 1000
+    DIST_TO_THRESHOLD = 300
+    DETECT_SHADOWS = True
+    MAX_SIZE = 2000
+    MIN_SIZE = 10
 
 
 class SimpleDetection:
-    MAX_SIZE = 200
-    MIN_SIZE = 5
+    MAX_SIZE = 2000
+    MIN_SIZE = 10
