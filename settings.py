@@ -52,3 +52,8 @@ class MovementIgnoredShapes:
     # in image scale (0-1) x0, y0, w, h
     # balcony
     RECTANGLES = [[0.0, 0.4, 0.2, 0.2]]
+
+
+class Video:
+    MIN_LENGTH = 10
+    FPS = 10
