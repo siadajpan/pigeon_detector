@@ -276,6 +276,7 @@ class TestController(TestCase):
     def test_show_picture(self, wait_key_mock, imshow_mock):
         # given
         self.controller.get_image_with_movement = MagicMock()
+        self.controller._movement_detector.draw_color_mask = MagicMock()
         wait_key_mock.return_value = ord('2')
 
         # when
@@ -283,6 +284,7 @@ class TestController(TestCase):
 
         # then
         self.controller.get_image_with_movement.assert_called()
+        self.controller._movement_detector.draw_color_mask.assert_called()
         imshow_mock.assert_called()
         wait_key_mock.assert_called()
 

@@ -1,5 +1,6 @@
-import RPi.GPIO as GPIO
 from time import sleep
+
+import RPi.GPIO as GPIO
 
 import settings
 
@@ -17,14 +18,14 @@ class PiServoController:
 
     def move_servo(self):
         self.set_angle(10)
-        self.set_angle(80)
+        self.set_angle(60)
 
     def set_angle(self, angle):
-        duty = angle / 18 + 2
+        duty = angle / 10
         self.pwm.ChangeDutyCycle(duty)
-        sleep(0.5)
+        sleep(0.2)
         self.pwm.ChangeDutyCycle(0)
-        sleep(0.1)
+        sleep(0.2)
 
     def cleanup(self):
         self.pwm.stop()

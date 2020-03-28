@@ -1,12 +1,13 @@
-import random
+import datetime
+import time
+from os.path import join
 
+import cv2
 import numpy as np
 import requests
 
 import settings
 from master_controller.camera.generic_camera import GenericCamera
-from master_controller.detection_runners.abstract_detection_runner import \
-    AbstractDetectionRunner
 from master_controller.detection_runners.local_detection_runner import \
     LocalDetectionRunner
 from master_controller.detection_runners.server_detection_runner import \
@@ -15,11 +16,7 @@ from master_controller.image_preprocessing.movement_background_subtract import \
     MovementDetectorBackgroundSubtract
 from master_controller.music_player import MusicPlayer
 from master_controller.video_recorder import VideoRecorder
-from settings import NOISE_LENGTH, PICTURES_FOLDER, BIRDS_FOLDER
-from os.path import join
-import time
-import datetime
-import cv2
+from settings import NOISE_LENGTH, BIRDS_FOLDER
 
 LOCAL_DETECTOR = 'LOCAL_DETECTOR'
 SERVER_DETECTOR = 'SERVER_DETECTOR'
@@ -121,6 +118,7 @@ class Controller:
 
     def show_picture(self):
         image = self.get_image_with_movement()
+        image = self._movement_detector.draw_color_mask(image)
         cv2.imshow('detection', image)
         if cv2.waitKey(1) == ord('q'):
             raise KeyboardInterrupt
