@@ -46,3 +46,9 @@ class PreProcessing:
 class SimpleDetection:
     MAX_SIZE = 2000
     MIN_SIZE = 10
+
+
+class MovementIgnoredShapes:
+    # in image scale (0-1) x0, y0, w, h
+    # balcony
+    RECTANGLES = [[0.0, 0.4, 0.2, 0.2]]
