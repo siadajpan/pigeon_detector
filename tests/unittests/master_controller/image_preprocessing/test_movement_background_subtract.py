@@ -68,6 +68,7 @@ class TestMovementDetectorBackgroundSubtract(TestCase):
 
     def test_find_movement_boxes(self):
         # given
+        self.movement.draw_mask = MagicMock()
         self.movement.find_contours = MagicMock()
         self.movement.analyze_contours = MagicMock()
 
@@ -75,6 +76,7 @@ class TestMovementDetectorBackgroundSubtract(TestCase):
         self.movement.find_movement_boxes(MagicMock())
 
         # then
+        self.movement.draw_mask.assert_called()
         self.movement.find_contours.assert_called()
         self.movement.analyze_contours.assert_called()
 

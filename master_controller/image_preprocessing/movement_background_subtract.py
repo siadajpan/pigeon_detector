@@ -27,6 +27,23 @@ class MovementDetectorBackgroundSubtract:
 
         return contours
 
+    def draw_mask(self, binary_image, color=(0, 0, 0)):
+        im_h, im_w = binary_image.shape[:2]
+        for masked_rectangle in settings.MovementIgnoredShapes.RECTANGLES:
+            x, y, w, h = masked_rectangle
+            x, w = int(x * im_w), int(w * im_w)
+            y, h = int(y * im_h), int(h * im_h)
+            cv2.rectangle(binary_image, (x, y), (x + w, y + h), color, -1)
+
+        return binary_image
+
+    def draw_color_mask(self, image):
+        mask = np.zeros_like(image)
+        mask = self.draw_mask(mask, (155, 155, 155))
+        image = cv2.addWeighted(image, 0.8, mask, 0.2, 1)
+
+        return image
+
     def analyze_contours(self, contours):
         max_size = settings.PreProcessing.MAX_SIZE
         min_size = settings.PreProcessing.MIN_SIZE
@@ -45,6 +62,7 @@ class MovementDetectorBackgroundSubtract:
         return rects
 
     def find_movement_boxes(self, binary_image):
+        binary_image = self.draw_mask(binary_image)
         contours = self.find_contours(binary_image)
         boxes = self.analyze_contours(contours)
         rectangles = [Rectangle(box[0], box[1], box[2] - box[0],
